@@ -34,7 +34,14 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
                     item1=inventory_get(screen, -1);
                     item2=inventory_get(screen, data:'slot');
 
-                    if(item2:2==global_nope,return('cancel'));
+                    if(item2:2==global_nope,(
+                        if(data:'slot'<9,return('cancel'));
+                        if(data:'slot'>17,return('cancel'));
+                        //modify(global_toggle:player, 'selected_slot', data:'slot'-9);
+                        //BUG!!!
+                        run('player '+global_toggle:player~'command_name'+' hotbar '+(data:'slot'-8));
+                        return('cancel')
+                    ));
                     
                     if(!item1 && item2,(
                         [id,c,n]=inventory_set(screen,data:'slot',0);
@@ -57,6 +64,7 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
     global_fakeplayersscreen:fakeplayer=screen;
 
     loop(54,inventory_set(screen,_, 1, 'minecraft:structure_void',global_nope));
+    inventory_set(screen,fakeplayer~'selected_slot'+9, 1, 'minecraft:barrier',global_nope);
     playertoscreen(fakeplayer,screen);
 
 );
@@ -88,3 +96,12 @@ handle_event('invupd',_(fakeplayer)->(
     if(screen,playertoscreen(fakeplayer,screen));
 ));
 
+
+__on_player_switches_slot(fakeplayer, from, to)->(
+    //print(player('chenyuxuan'),[fakeplayer,from, to]);
+    screen=global_fakeplayersscreen:fakeplayer;
+    if(screen,(
+        inventory_set(screen,from+9, 1, 'minecraft:structure_void',global_nope);
+        inventory_set(screen,to  +9, 1, 'minecraft:barrier',global_nope);
+    ))
+);
