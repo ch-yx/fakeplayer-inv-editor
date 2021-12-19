@@ -5,25 +5,24 @@ __config()->{
 
 global_nope=nbt('{nope:nope}');
 
-global_slotmap=[[-1,7],[-2,1],[-3,2],[-4,3],[-5,4]];
-loop(9,global_slotmap+=[_,45+_]);
-loop(27,global_slotmap+=[9+_,18+_]);
+global_slotmap=[[-1,7],[-2,1],[-3,2],[-4,3],[-5,4],...map(range(9),[_,45+_]),...map(range(27),[9+_,18+_])];
 
-global_toggle={};
+
 global_fakeplayersscreen={};
 
 __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
     if(hand=='mainhand',0,return());
     if(fakeplayer~'player_type'=='fake',0,return());
-    if(creativeplayer~'gamemode'=='creative',0,return());
+    //if(creativeplayer~'gamemode'=='creative',0,return());
     if(global_fakeplayersscreen:fakeplayer,return());
 
-    global_toggle:creativeplayer=fakeplayer;
+    
 
-    screen=create_screen(creativeplayer,'generic_9x6',fakeplayer~'name',_(screen, player, action,data)->(
+    screen=create_screen(creativeplayer,'generic_9x6',fakeplayer~'name',_(screen, player, action,data,outer(fakeplayer))->(
         if(action=='close',(
-                    screentoplayer(global_toggle:player,screen);
+                    screentoplayer(fakeplayer,screen);
                     drop_item(screen,-1);
+                    close_screen(screen);//end_portal/die
                     return('cancel')
         ));
         if(action=='pickup',(
@@ -37,9 +36,9 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
                     if(item2:2==global_nope,(
                         if(data:'slot'<9,return('cancel'));
                         if(data:'slot'>17,return('cancel'));
-                        //modify(global_toggle:player, 'selected_slot', data:'slot'-9);
+                        //modify(fakeplayer, 'selected_slot', data:'slot'-9);
                         //BUG!!!
-                        run('player '+global_toggle:player~'command_name'+' hotbar '+(data:'slot'-8));
+                        run('player '+fakeplayer~'command_name'+' hotbar '+(data:'slot'-8));
                         return('cancel')
                     ));
                     
@@ -55,7 +54,7 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
                         [id,c,n]=item1;
                         inventory_set(screen,data:'slot',c,id,n)
                     ));
-                    screentoplayer(global_toggle:player,screen);
+                    screentoplayer(fakeplayer,screen);
                     return('cancel')
         ));
         return('cancel')
@@ -91,17 +90,24 @@ screentoplayer(fakeplayer,screen)->(
 );
 
 handle_event('invupd',_(fakeplayer)->(
-   // print(player('chenyuxuan'),[fakeplayer,1]);
     screen=global_fakeplayersscreen:fakeplayer;
     if(screen,playertoscreen(fakeplayer,screen));
 ));
 
 
 __on_player_switches_slot(fakeplayer, from, to)->(
-    //print(player('chenyuxuan'),[fakeplayer,from, to]);
     screen=global_fakeplayersscreen:fakeplayer;
     if(screen,(
         inventory_set(screen,from+9, 1, 'minecraft:structure_void',global_nope);
         inventory_set(screen,to  +9, 1, 'minecraft:barrier',global_nope);
     ))
 );
+
+
+__on_player_disconnects(fakeplayer, reason)->(
+    screen=global_fakeplayersscreen:fakeplayer;
+    if(screen,(
+        drop_item(screen,-1);
+        close_screen(screen);
+    ))
+)
