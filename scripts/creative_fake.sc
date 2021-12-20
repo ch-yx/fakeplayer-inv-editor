@@ -9,7 +9,7 @@ global_slotmap=[[-1,7],[-2,1],[-3,2],[-4,3],[-5,4],...map(range(9),[_,45+_]),...
 
 
 global_fakeplayersscreen={};
-
+global_quick_craft={};
 __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
     if(hand=='mainhand',0,return());
     if(fakeplayer~'player_type'=='fake',0,return());
@@ -20,10 +20,58 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
 
     screen=create_screen(creativeplayer,'generic_9x6',fakeplayer~'name',_(screen, player, action,data,outer(fakeplayer))->(
         if(action=='close',(
-                    screentoplayer(fakeplayer,screen);
+                    //screentoplayer(fakeplayer,screen);
                     drop_item(screen,-1);
                     close_screen(screen);//end_portal/die
                     return('cancel')
+        ));
+        if(action=='clone'&& player~'insta_build'&&!inventory_get(screen, -1),(
+                    if(data:'slot'<0,return('cancel'));
+                    if(data:'slot'>89,return('cancel'));
+                    if(inventory_get(screen, data:'slot'):2==global_nope,return('cancel'))
+                    return('NOTcancel')
+        ));
+        if(action=='quick_craft',(
+            
+            if(data:'quick_craft_stage'==0,(
+                global_quick_craft:player=[];
+            ),data:'quick_craft_stage'==1,(
+                if(data:'slot'<0,return('cancel'));
+                if(data:'slot'>89,return('cancel'));
+                item=inventory_get(screen, data:'slot');
+                item1=inventory_get(screen, -1);
+                if(item==null,
+                    (
+                        global_quick_craft:player:null=data:'slot';
+                    ),
+                item:0==item1:0&&item:2==item1:2,
+                   (
+                        global_quick_craft:player:null=data:'slot';
+                   ),
+                        logger('WHAT?????')
+                )
+                
+            ),data:'quick_craft_stage'==2,(
+                item1=inventory_get(screen, -1);
+                
+                slot_list=global_quick_craft:player;
+                delta_ge=if(data:'button'==0,floor(item1:1/length(slot_list)),
+                data:'button'==1,1,
+                data:'button'==2 && player~'insta_build',stack_limit(item1:0),
+                data:'button'==2,0
+                );
+                [id1,c1,nbt1]=inventory_get(screen, -1);
+                for(slot_list,(
+                    c1=0+inventory_get(screen, -1):1;
+                    c2=0+inventory_get(screen, _):1;
+                    delta_re=min(delta_ge,stack_limit(id1)-c2);
+                    inventory_set(screen,-1,c1-delta_re,id1,nbt1);
+                    inventory_set(screen,_,c2+delta_re,id1,nbt1)
+
+                ));
+                screentoplayer(fakeplayer,screen);
+            ));
+            return('cancel')
         ));
         if(action=='pickup',(
                     
@@ -42,12 +90,27 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
                         return('cancel')
                     ));
                     
-                    if(!item1 && item2,(
+                    if(!item1 && item2 && data:'button'==0,(
                         [id,c,n]=inventory_set(screen,data:'slot',0);
                         inventory_set(screen,-1,c,id,n)
-                    ),item1 && !item2,(
+                    ),!item1 && item2 && data:'button'==1,(
+                        c=floor(item2:1/2);
+                        [id,c1,n]=inventory_set(screen,data:'slot',c);
+                        inventory_set(screen,-1,c1-c,id,n)
+                    ),item1 && !item2 && data:'button'==0,(
                         [id,c,n]=inventory_set(screen,-1,0);
                         inventory_set(screen,data:'slot',c,id,n)
+                    ),item1 && !item2 && data:'button'==1,(
+                        c=item1:1;
+                        [id,c,n]=inventory_set(screen,-1,c-1);
+                        inventory_set(screen,data:'slot',1,id,n)
+                    ),item1 && item2 && item1:0==item2:0 && item1:2==item2:2,(
+                        delta=if(data:'button'==0,item1:1,data:'button'==1,1);
+                        delta=min(delta,stack_limit(item1:0)-item2:1);
+                        [id,c,n]=item1;
+                        inventory_set(screen,-1,c-delta,id,n);
+                        [id,c,n]=item2;
+                        inventory_set(screen,data:'slot',c+delta,id,n)
                     ),item1 && item2,(
                         [id,c,n]=item2;
                         inventory_set(screen,-1,c,id,n);
