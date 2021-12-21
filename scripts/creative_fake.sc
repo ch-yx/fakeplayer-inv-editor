@@ -3,7 +3,7 @@ __config()->{
     'stay_loaded'->true
 };
 
-global_nope=nbt('{nope:nope}');
+global_nope=nbt('{nope:nope'+rand(1)+'nope}');
 
 global_slotmap=[[-1,7],[-2,1],[-3,2],[-4,3],[-5,4],...map(range(9),[_,45+_]),...map(range(27),[9+_,18+_])];
 
@@ -28,7 +28,7 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
         if(action=='clone'&& player~'insta_build'&&!inventory_get(screen, -1),(
                     if(data:'slot'<0,return('cancel'));
                     if(data:'slot'>89,return('cancel'));
-                    if(inventory_get(screen, data:'slot'):2==global_nope,return('cancel'))
+                    if(inventory_get(screen, data:'slot'):2==global_nope,return('cancel'));
                     return('NOTcancel')
         ));
         if(action=='quick_craft',(
@@ -52,15 +52,15 @@ __on_player_interacts_with_entity(creativeplayer, fakeplayer, hand)->(
                 )
                 
             ),data:'quick_craft_stage'==2,(
-                item1=inventory_get(screen, -1);
                 
+                [id1,c1,nbt1]=inventory_get(screen, -1);
                 slot_list=global_quick_craft:player;
-                delta_ge=if(data:'button'==0,floor(item1:1/length(slot_list)),
+                delta_ge=if(data:'button'==0,floor(c1/length(slot_list)),
                 data:'button'==1,1,
-                data:'button'==2 && player~'insta_build',stack_limit(item1:0),
+                data:'button'==2 && player~'insta_build',stack_limit(id1),
                 data:'button'==2,0
                 );
-                [id1,c1,nbt1]=inventory_get(screen, -1);
+                
                 for(slot_list,(
                     c1=0+inventory_get(screen, -1):1;
                     c2=0+inventory_get(screen, _):1;
